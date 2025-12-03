@@ -1,0 +1,232 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-08-01/managementGroupDeploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "p_subscription_id": {
+            "type": "string",
+            "defaultValue": "11111111-1111-1111-1111-111111111111" 
+        },
+        "p_resource_group_name": {
+            "type": "string",
+            "defaultValue": "test-rg"
+        },
+        "p_location": {
+            "type": "string",
+            "defaultValue": "[deployment().location]"
+        },
+        "p_os_type": {
+            "type": "string",
+            "defaultValue": "Linux"
+        },
+        "p_tags": {
+            "type": "object",
+            "defaultValue": {"key1": "value1"}
+        }
+    },
+    "variables": {
+        "maintenance_configuration_name": "my-config-maintenance"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2025-04-01",
+            "name": "m_patch_resource_group",
+            "subscriptionId": "[parameters('p_subscription_id')]",
+            "location": "[parameters('p_location')]",
+            "properties": {
+                "expressionEvaluationOptions": {
+                    "scope": "Inner"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('p_location')]"
+                    },
+                    "tags": {
+                        "value": "[parameters('p_tags')]"
+                    },
+                    "resource_group_name": {
+                        "value": "[parameters('p_resource_group_name')]"
+                    }
+                },
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "location": {
+                            "type": "string"
+                        },
+                        "tags": {
+                            "type": "object"
+                        },
+                        "resource_group_name": {
+                            "type": "string"
+                        }
+                    },
+                    "resources": [
+                        {
+                            "type": "Microsoft.Resources/resourceGroups",
+                            "apiVersion": "2025-04-01",
+                            "name": "[parameters('resource_group_name')]",
+                            "location": "[parameters('location')]",
+                            "tags": "[parameters('tags')]"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2025-04-01",
+            "name": "m_maintenance_configuration",
+            "subscriptionId": "[parameters('p_subscription_id')]",
+            "resourceGroup": "[parameters('p_resource_group_name')]",
+            "properties": {
+                "expressionEvaluationOptions": {
+                    "scope": "Inner"
+                },
+                "parameters": {
+                    "location": {
+                        "value": "[parameters('p_location')]"
+                    },
+                    "tags": {
+                        "value": "[parameters('p_tags')]"
+                    },
+                    "maintenance_configuration_name": {
+                        "value": "[variables('maintenance_configuration_name')]"
+                    }
+                },
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "location": {
+                            "type": "string"
+                        },
+                        "tags": {
+                            "type": "object"
+                        },
+                        "maintenance_configuration_name": {
+                            "type": "string"
+                        }
+                    },
+                    "resources": [
+                        {
+                            "type": "Microsoft.Maintenance/maintenanceConfigurations",
+                            "apiVersion": "2023-10-01-preview",
+                            "name": "[parameters('maintenance_configuration_name')]",
+                            "location": "[parameters('location')]",
+                            "properties": {
+                                "maintenanceScope": "InGuestPatch",
+                                "extensionProperties": {
+                                    "InGuestPatchMode": "User"
+                                },
+                                "maintenanceWindow": {
+                                    "startDateTime": "2025-12-13 04:00",
+                                    "duration": "02:00",
+                                    "timeZone": "AUS Eastern Standard Time",
+                                    "recurEvery": "2Week Saturday"
+                                },
+                                "visibility": "Custom",
+                                "installPatches": {
+                                    "rebootSettings": "IfRequired",
+                                    "linuxParameters": {
+                                        "classificationsToInclude": [
+                                            "Critical",
+                                            "Security",
+                                            "Other"
+                                        ]
+                                    }
+                                }
+                            },
+                            "tags": "[parameters('tags')]"
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments', 'm_patch_resource_group')]"
+            ]
+        },
+        {
+            "type": "Microsoft.Resources/deployments",
+            "apiVersion": "2025-04-01",
+            "name": "m_configuration_assignment",
+            "subscriptionId": "[parameters('p_subscription_id')]",
+            "location": "[parameters('p_location')]",
+            "properties": {
+                "expressionEvaluationOptions": {
+                    "scope": "Inner"
+                },
+                "parameters": {
+                    "subscription_id": {
+                        "value": "[parameters('p_subscription_id')]"
+                    },
+                    "resource_group_name": {
+                        "value": "[parameters('p_resource_group_name')]"
+                    },
+                    "os_type": {
+                        "value": "[parameters('p_os_type')]"
+                    },
+                    "maintenance_configuration_name": {
+                        "value": "[variables('maintenance_configuration_name')]"
+                    },
+                    "tags": {
+                        "value": "[parameters('p_tags')]"
+                    }
+                },
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {
+                        "subscription_id": {
+                            "type": "string"
+                        },
+                        "resource_group_name": {
+                            "type": "string"
+                        },
+                        "os_type": {
+                            "type": "string"
+                        },
+                        "maintenance_configuration_name": {
+                            "type": "string"
+                        },
+                        "tags": {
+                            "type": "object"
+                        }
+                    },
+                    "resources": [
+                        {
+                            "type": "Microsoft.Maintenance/configurationAssignments",
+                            "apiVersion": "2023-10-01-preview",
+                            "name": "[concat(subscription().displayName, '-', parameters('maintenance_configuration_name'))]",
+                            "properties": {
+                                "maintenanceConfigurationId": "[resourceId(parameters('subscription_id'), parameters('resource_group_name'), 'Microsoft.Maintenance/maintenanceConfigurations', parameters('maintenance_configuration_name'))]",
+                                "filter": {
+                                    "resourceTypes": [
+                                        "microsoft.compute/virtualmachines"
+                                    ],
+                                    "osTypes": [
+                                        "[parameters('os_type')]"
+                                    ],
+                                    "tagSettings": {
+                                        "filterOperator": "All",
+                                        "tags": {
+                                            "patch_management": ["patch_saturday_fortnightly"]
+                                        }
+                                    }
+                                }
+                            },
+                            "tags": "[parameters('tags')]"
+                        }
+                    ]
+                }
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Resources/deployments', 'm_maintenance_configuration')]"
+            ]
+        }
+    ]
+}
