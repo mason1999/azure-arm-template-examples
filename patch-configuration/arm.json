@@ -130,7 +130,7 @@
                                 },
                                 "visibility": "Custom",
                                 "installPatches": {
-                                    "rebootSettings": "IfRequired",
+                                    "rebootSetting": "IfRequired",
                                     "linuxParameters": {
                                         "classificationsToInclude": [
                                             "Critical",
